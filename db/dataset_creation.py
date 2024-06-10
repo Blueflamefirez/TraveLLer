@@ -9,7 +9,7 @@ from langchain_core.documents import Document
 
 graph = Neo4jGraph(url="bolt://localhost:7687", username="neo4j", password="password")
 
-llm = Ollama(model="mistral:7b", base_url="http://localhost:8080")
+llm = Ollama(model="llama3:8b", base_url="http://localhost:8080")
 
 llm_graph_transformer = LLMGraphTransformer(llm=llm)
 countries = [
