@@ -5,6 +5,8 @@ from langchain.text_splitter import TokenTextSplitter
 from langchain_community.llms.ollama import Ollama
 from langchain_experimental.graph_transformers import LLMGraphTransformer
 from langchain_core.documents import Document
+import wikivoyage
+import re
 
 
 graph = Neo4jGraph(url="bolt://localhost:7687", username="neo4j", password="password")
@@ -22,14 +24,14 @@ countries = [
 "Norway",
 "Poland",
 "Italy",
-"United Kingdom",
+"United_Kingdom",
 "Romania",
 "Belarus",
 "Greece",
 "Bulgaria",
 "Iceland",
 "Portugal",
-"Czech Republic",
+"Czech_Republic",
 "Denmark",
 "Hungary",
 "Serbia",
@@ -57,24 +59,28 @@ countries = [
 "Malta",
 "Liechtenstein",
 "Guernsey",
-"San Marino",
+"San_Marino",
 "Gibraltar",
 "Monaco",
-"Vatican City"]
+"Vatican_City"]
 split_docs = []
 text_splitter = TokenTextSplitter(chunk_size=512, chunk_overlap=24)
 
-# text = """
-# Marie Curie, born in 1867, was a Polish and naturalised-French physicist and chemist who conducted pioneering research on radioactivity.
-# She was the first woman to win a Nobel Prize, the first person to win a Nobel Prize twice, and the only person to win a Nobel Prize in two scientific fields.
-# Her husband, Pierre Curie, was a co-winner of her first Nobel Prize, making them the first-ever married couple to win the Nobel Prize and launching the Curie family legacy of five Nobel Prizes.
-# She was, in 1906, the first woman to become a professor at the University of Paris.
-# """
-# documents = [Document(page_content=text)]
+def remove_URL(text):
+    """
+    Remove URLs from a text string
+    """
+    text = re.sub(r"https\S+", "", text)
+    text = re.sub(r"\[.*?\]\S", "", text)
+    return text
 
-for country in countries[:1]:
-    docs = WikipediaLoader(query=country, load_max_docs=1, doc_content_chars_max=-1).load()
-    #print(docs)
+for country in countries:
+    doc = ""
+    # docs = WikipediaLoader(query=country, load_max_docs=1, doc_content_chars_max=-1).load()
+    sections = wikivoyage.get(f"https://en.wikivoyage.org/wiki/{country}").sections
+    for i in sections:
+        doc += i.title + "\n" + remove_URL(i.content)
+    docs = [Document(page_content=doc, metadata={"title": country})]
     split_docs = text_splitter.split_documents(docs)
     #print(split_docs)
     with open(f"./country_documents/{country}.txt", "a") as f:
@@ -84,3 +90,8 @@ for country in countries[:1]:
 
 graph_docs = llm_graph_transformer.convert_to_graph_documents(split_docs)
 graph.add_graph_documents(graph_docs, baseEntityLabel=True, include_source=True)
+try:
+    graph.query("MATCH (n:None) DETACH DELETE n")
+except:
+    print("No None nodes to delete")
+

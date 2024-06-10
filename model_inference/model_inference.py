@@ -1,19 +1,14 @@
-import os
-#os.environ["OLLAMA_HOST"] = "http://127.0.0.1:8080"
-from langchain_community.llms.ollama import Ollama
-from langchain_core.documents import Document
+import wikivoyage
+import re
 
+def remove_URL(text):
+    """
+    Remove URLs from a text string
+    """
+    return re.sub(r"\(http\S+", "", text)
 
+res = wikivoyage.get("https://en.wikivoyage.org/wiki/Albania")
 
-#graph = Neo4jGraph(url="http://localhost:7474")
-
-
-#llm = Ollama(model='gemma:2b', base_url="http://127.0.0.1:8080")
-#print(llm.invoke('Why is the sky blue?'))
-
-
-
-
-
-# response = ollama.chat(model='gemma:2b', messages=[{'role':'user', 'content':'Why is the sky blue?'}])
-# print(response['message']['content'])
+for i in res.sections:
+    print(i.title, "\n")
+    print(remove_URL(i.content))
